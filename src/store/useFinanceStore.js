@@ -1,0 +1,628 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
+import { transactions as mockTransactions } from '../data';
+
+const useFinanceStore = create(
+  persist(
+    (set, get) => ({
+      transactions: [],
+      filters: {
+        search: '',
+        category: '',
+        type: '',
+        dateRange: { start: '', end: '' },
+        month: ''
+      },
+      sortConfig: {
+        key: 'date',
+        direction: 'desc'
+      },
+      showAddModal: false,
+      editingTransaction: null,
+      selectedTransactions: new Set(),
+      role: 'user',
+      darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      
+      addTransaction: (transaction) => {
+        set((state) => ({
+          transactions: [...state.transactions, { ...transaction, id: Date.now() }]
+        }));
+      },
+      
+      updateTransaction: (id, updates) => {
+        set((state) => ({
+          transactions: state.transactions.map(t => 
+            t.id === id ? { ...t, ...updates } : t
+          )
+        }));
+      },
+      
+      deleteTransaction: (id) => {
+        set((state) => ({
+          transactions: state.transactions.filter(t => t.id !== id),
+          selectedTransactions: new Set([...state.selectedTransactions].filter(selectedId => selectedId !== id))
+        }));
+      },
+      
+      setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
+      setSortConfig: (sortConfig) => set({ sortConfig }),
+      setShowAddModal: (show) => set({ showAddModal: show }),
+      setEditingTransaction: (transaction) => set({ editingTransaction: transaction }),
+      toggleTransactionSelection: (id) => {
+        set((state) => {
+          const newSelected = new Set(state.selectedTransactions);
+          if (newSelected.has(id)) {
+            newSelected.delete(id);
+          } else {
+            newSelected.add(id);
+          }
+          return { selectedTransactions: newSelected };
+        });
+      },
+      clearSelectedTransactions: () => set({ selectedTransactions: new Set() }),
+      setRole: (role) => set({ role }),
+      toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+    }),
+    {
+      name: 'finance-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        transactions: state.transactions,
+        filters: state.filters,
+        sortConfig: state.sortConfig,
+        role: state.role,
+        darkMode: state.darkMode,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state && state.transactions.length === 0) {
+          state.transactions = mockTransactions;
+        }
+      }
+    }
+  )
+);
+
+// Simple selectors without complex computations to avoid infinite loops
+export const useFilteredTransactions = () => {
+  return useFinanceStore(
+    (state) => {
+      const { transactions, filters, sortConfig } = state;
+      let filtered = [...transactions];
+      
+      // Apply filters
+      if (filters.search) {
+        filtered = filtered.filter(t => 
+          t.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+          t.category.toLowerCase().includes(filters.search.toLowerCase())
+        );
+      }
+      
+      if (filters.category) {
+        filtered = filtered.filter(t => t.category === filters.category);
+      }
+      
+      if (filters.type) {
+        filtered = filtered.filter(t => t.type === filters.type);
+      }
+      
+      if (filters.dateRange.start && filters.dateRange.end) {
+        filtered = filtered.filter(t => 
+          t.date >= filters.dateRange.start && t.date <= filters.dateRange.end
+        );
+      }
+      
+      if (filters.month) {
+        filtered = filtered.filter(t => t.date.startsWith(filters.month));
+      }
+      
+      // Apply sorting
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+        
+        if (sortConfig.key === 'amount') {
+          aValue = Number(aValue);
+          bValue = Number(bValue);
+        }
+        
+        if (sortConfig.key === 'date') {
+          aValue = new Date(aValue);
+          bValue = new Date(bValue);
+        }
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      return filtered;
+    },
+    shallow
+  );
+};
+
+export const useFinancialMetrics = () => {
+  return useFinanceStore(
+    (state) => {
+      const transactions = state.transactions;
+      
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+        
+      const totalExpenses = Math.abs(transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0));
+        
+      const totalBalance = totalIncome - totalExpenses;
+      const savingsRate = totalIncome === 0 ? 0 : ((totalIncome - totalExpenses) / totalIncome * 100);
+      
+      return {
+        totalIncome,
+        totalExpenses,
+        totalBalance,
+        savingsRate
+      };
+    },
+    shallow
+  );
+};
+
+export const useAnalytics = () => {
+  return useFinanceStore(
+    (state) => {
+      const transactions = state.transactions;
+      
+      // Balance trend
+      const balanceTrend = [...transactions]
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .reduce((acc, t) => {
+          const lastBalance = acc.length > 0 ? acc[acc.length - 1].balance : 0;
+          acc.push({
+            date: t.date,
+            balance: lastBalance + Number(t.amount),
+            income: t.type === 'income' ? Number(t.amount) : 0,
+            expense: t.type === 'expense' ? Math.abs(Number(t.amount)) : 0
+          });
+          return acc;
+        }, []);
+      
+      // Monthly comparison
+      const monthlyData = transactions.reduce((acc, t) => {
+        const month = t.date.substring(0, 7);
+        if (!acc[month]) {
+          acc[month] = { income: 0, expense: 0 };
+        }
+        if (t.type === 'income') {
+          acc[month].income += Number(t.amount);
+        } else {
+          acc[month].expense += Math.abs(Number(t.amount));
+        }
+        return acc;
+      }, {});
+      
+      const monthlyComparison = Object.entries(monthlyData).map(([month, data]) => ({
+        month,
+        ...data
+      }));
+      
+      // Simple insights
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+        
+      const totalExpenses = Math.abs(transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0));
+        
+      const savingsRate = totalIncome === 0 ? 0 : ((totalIncome - totalExpenses) / totalIncome * 100);
+      
+      const smartInsights = [];
+      
+      if (totalExpenses > totalIncome) {
+        smartInsights.push({
+          type: 'warning',
+          message: 'Your expenses exceed your income. Consider reviewing your spending habits.',
+          priority: 'high'
+        });
+      }
+      
+      if (savingsRate < 10) {
+        smartInsights.push({
+          type: 'warning',
+          message: 'Your savings rate is below 10%. Consider building an emergency fund.',
+          priority: 'medium'
+        });
+      }
+      
+      return {
+        balanceTrend,
+        monthlyComparison,
+        topSpendingCategory: null,
+        savingsRate,
+        smartInsights
+      };
+    },
+    shallow
+  );
+};
+
+export default useFinanceStore;
+        
+        set((state) => ({
+          transactions: [newTransaction, ...state.transactions]
+        }));
+      },
+      
+      updateTransaction: (id, updates) => {
+        const { role } = get();
+        if (role !== 'admin') {
+          console.warn('Only admins can update transactions');
+          return false;
+        }
+        
+        set((state) => ({
+          transactions: state.transactions.map(t =>
+            t.id === id ? { ...t, ...updates } : t
+          ),
+          editingTransaction: null
+        }));
+        return true;
+      },
+      
+      deleteTransaction: (id) => {
+        const { role } = get();
+        if (role !== 'admin') {
+          console.warn('Only admins can delete transactions');
+          return false;
+        }
+        
+        set((state) => ({
+          transactions: state.transactions.filter(t => t.id !== id)
+        }));
+        return true;
+      },
+      
+      // Actions - Role Management
+      setRole: (newRole) => {
+        set({ role: newRole });
+      },
+      
+      // Actions - Filter Management
+      setFilters: (newFilters) => {
+        set((state) => ({
+          filters: { ...state.filters, ...newFilters }
+        }));
+      },
+      
+      updateFilter: (filterName, value) => {
+        set((state) => ({
+          filters: { ...state.filters, [filterName]: value }
+        }));
+      },
+      
+      clearAllFilters: () => {
+        set({
+          filters: {
+            search: '',
+            category: '',
+            type: '',
+            dateRange: { start: '', end: '' },
+            month: ''
+          }
+        });
+      },
+      
+      // Actions - Sort Management
+      setSortConfig: (field, order) => {
+        set({
+          sortConfig: { field, order: order || 'desc' }
+        });
+      },
+      
+      toggleSortOrder: (field) => {
+        const { sortConfig } = get();
+        const newOrder = sortConfig.field === field && sortConfig.order === 'desc' ? 'asc' : 'desc';
+        set({
+          sortConfig: { field, order: newOrder }
+        });
+      },
+      
+      // Actions - UI State
+      setLoading: (loading) => {
+        set({ isLoading: loading });
+      },
+      
+      setEditingTransaction: (transaction) => {
+        set({ editingTransaction: transaction });
+      },
+      
+      setShowAddModal: (show) => {
+        set({ showAddModal: show });
+      },
+      
+      // Helper Methods - No computed values, just pure functions
+      getCategories: () => {
+        const { transactions } = get();
+        return [...new Set(transactions.map(t => t.category))].sort();
+      },
+      
+      getAvailableMonths: () => {
+        const { transactions } = get();
+        const months = [...new Set(transactions.map(t => t.date.substring(0, 7)))].sort();
+        return months.reverse();
+      },
+      
+      // Validation
+      validateTransaction: (transaction) => {
+        const errors = [];
+        
+        if (!transaction.description?.trim()) {
+          errors.push('Description is required');
+        }
+        
+        if (!transaction.category?.trim()) {
+          errors.push('Category is required');
+        }
+        
+        if (!transaction.type || !['income', 'expense'].includes(transaction.type)) {
+          errors.push('Type must be income or expense');
+        }
+        
+        if (!transaction.amount || transaction.amount <= 0) {
+          errors.push('Amount must be greater than 0');
+        }
+        
+        if (!transaction.date) {
+          errors.push('Date is required');
+        }
+        
+        return errors;
+      }
+    }),
+    {
+      name: 'finance-store',
+      partialize: (state) => ({
+        transactions: state.transactions,
+        role: state.role,
+        filters: state.filters,
+        sortConfig: state.sortConfig
+      })
+    }
+  )
+);
+
+// Initialize with mock data if empty - but do it safely
+try {
+  const currentState = useFinanceStore.getState();
+  if (currentState && currentState.transactions.length === 0) {
+    useFinanceStore.setState({ transactions: mockTransactions });
+  }
+} catch (error) {
+  console.log('Store initialization will happen on first mount');
+}
+
+// Export selectors for computed values to prevent getSnapshot issues
+export const useFilteredTransactions = () => {
+  return useFinanceStore(
+    (state) => {
+      const { transactions, filters, sortConfig } = state;
+      let filtered = [...transactions];
+      
+      // Apply filters
+      if (filters.search) {
+        filtered = filtered.filter(t => 
+          t.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+          t.category.toLowerCase().includes(filters.search.toLowerCase())
+        );
+      }
+      
+      if (filters.category) {
+        filtered = filtered.filter(t => t.category === filters.category);
+      }
+      
+      if (filters.type) {
+        filtered = filtered.filter(t => t.type === filters.type);
+      }
+      
+      if (filters.dateRange.start && filters.dateRange.end) {
+        filtered = filtered.filter(t => 
+          t.date >= filters.dateRange.start && t.date <= filters.dateRange.end
+        );
+      }
+      
+      if (filters.month) {
+        filtered = filtered.filter(t => t.date.startsWith(filters.month));
+      }
+      
+      // Apply sorting
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.field];
+        const bValue = b[sortConfig.field];
+        
+        if (sortConfig.field === 'date') {
+          return sortConfig.order === 'asc' 
+            ? new Date(aValue) - new Date(bValue)
+            : new Date(bValue) - new Date(aValue);
+        }
+        
+        if (sortConfig.field === 'amount') {
+          return sortConfig.order === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        return sortConfig.order === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      });
+      
+      return filtered;
+    },
+    shallow
+  );
+};
+
+// Financial metrics selectors
+export const useFinancialMetrics = () => {
+  return useFinanceStore(
+    (state) => {
+      const transactions = state.transactions;
+      
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalExpenses = Math.abs(transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0));
+        
+      const totalBalance = totalIncome - totalExpenses;
+      
+      const savingsRate = totalIncome === 0 ? 0 : ((totalIncome - totalExpenses) / totalIncome * 100);
+      
+      return {
+        totalIncome,
+        totalExpenses,
+        totalBalance,
+        savingsRate
+      };
+    },
+    shallow
+  );
+};
+
+// Analytics selectors
+export const useAnalytics = () => {
+  return useFinanceStore(
+    (state) => {
+      const transactions = state.transactions;
+      
+      // Balance trend
+      const balanceTrend = [...transactions]
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .reduce((acc, t) => {
+          const lastBalance = acc.length > 0 ? acc[acc.length - 1].balance : 0;
+          acc.push({
+            date: t.date,
+            balance: lastBalance + t.amount,
+            income: t.type === 'income' ? t.amount : 0,
+            expense: t.type === 'expense' ? Math.abs(t.amount) : 0
+          });
+          return acc;
+        }, []);
+      
+      // Monthly comparison
+      const monthlyData = {};
+      transactions.forEach(t => {
+        const month = t.date.substring(0, 7);
+        if (!monthlyData[month]) {
+          monthlyData[month] = { income: 0, expenses: 0 };
+        }
+        
+        if (t.type === 'income') {
+          monthlyData[month].income += t.amount;
+        } else {
+          monthlyData[month].expenses += Math.abs(t.amount);
+        }
+      });
+      
+      const monthlyComparison = Object.entries(monthlyData).map(([month, data]) => ({
+        month,
+        ...data,
+        net: data.income - data.expenses
+      })).sort((a, b) => a.month.localeCompare(b.month));
+      
+      // Top spending category
+      const categorySpending = {};
+      transactions
+        .filter(t => t.type === 'expense')
+        .forEach(t => {
+          categorySpending[t.category] = (categorySpending[t.category] || 0) + Math.abs(t.amount);
+        });
+      
+      const topSpendingCategory = Object.entries(categorySpending)
+        .sort(([,a], [,b]) => b - a)[0] || [null, 0];
+      
+      // Average monthly expense
+      const averageMonthlyExpense = monthlyComparison.length === 0 ? 0 :
+        monthlyComparison.reduce((sum, month) => sum + month.expenses, 0) / monthlyComparison.length;
+      
+      // Best saving month
+      const bestSavingMonth = monthlyComparison.length === 0 ? null :
+        monthlyComparison
+          .filter(month => month.net > 0)
+          .sort((a, b) => b.net - a.net)[0] || null;
+      
+      // Calculate financial metrics locally to avoid circular dependency
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalExpenses = Math.abs(transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0));
+        
+      const savingsRate = totalIncome === 0 ? 0 : ((totalIncome - totalExpenses) / totalIncome * 100);
+      
+      // Smart insights
+      const insights = [];
+      
+      if (monthlyComparison.length >= 2) {
+        const currentMonth = monthlyComparison[monthlyComparison.length - 1];
+        const lastMonth = monthlyComparison[monthlyComparison.length - 2];
+        
+        const expenseChange = ((currentMonth.expenses - lastMonth.expenses) / lastMonth.expenses * 100);
+        
+        if (Math.abs(expenseChange) > 20) {
+          insights.push({
+            type: 'trend',
+            message: `You spent ${Math.abs(expenseChange).toFixed(0)}% ${expenseChange > 0 ? 'more' : 'less'} this month compared to last month`,
+            severity: expenseChange > 0 ? 'warning' : 'success'
+          });
+        }
+      }
+      
+      const [topCategory, topAmount] = topSpendingCategory;
+      if (topCategory && topAmount > 0) {
+        const totalExpensesValue = Math.abs(transactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0));
+        const percentage = (topAmount / totalExpensesValue * 100).toFixed(0);
+        
+        if (percentage > 40) {
+          insights.push({
+            type: 'category',
+            message: `${topCategory} represents ${percentage}% of your total spending`,
+            severity: 'warning'
+          });
+        }
+      }
+      
+      if (savingsRate < 10) {
+        insights.push({
+          type: 'savings',
+          message: `Your savings rate is ${savingsRate.toFixed(1)}%. Consider reducing expenses`,
+          severity: 'warning'
+        });
+      } else if (savingsRate > 30) {
+        insights.push({
+          type: 'savings',
+          message: `Excellent savings rate of ${savingsRate.toFixed(1)}%! Keep it up!`,
+          severity: 'success'
+        });
+      }
+      
+      return {
+        balanceTrend,
+        monthlyComparison,
+        topSpendingCategory,
+        averageMonthlyExpense,
+        bestSavingMonth,
+        smartInsights: insights
+      };
+    },
+    shallow
+  );
+};
+
+export default useFinanceStore;

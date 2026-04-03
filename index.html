@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zorvyn Finance Suite - Administrator Dashboard</title>
+<meta name="description" content="Advanced financial analytics dashboard with real-time insights and professional portfolio management">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-container">
+  <!-- Enhanced Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <div class="logo-title">Zorvyn</div>
+          <div class="logo-subtitle">Finance Suite</div>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Main</div>
+        <a href="#" class="nav-item active" data-section="overview">
+          <span class="nav-icon">📊</span>
+          <span>Overview</span>
+        </a>
+        <a href="#" class="nav-item" data-section="transactions">
+          <span class="nav-icon">💳</span>
+          <span>Transactions</span>
+        </a>
+        <a href="#" class="nav-item" data-section="reports">
+          <span class="nav-icon">�</span>
+          <span>Reports</span>
+        </a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Management</div>
+        <a href="#" class="nav-item" data-section="accounts">
+          <span class="nav-icon">🏦</span>
+          <span>Accounts</span>
+        </a>
+        <a href="#" class="nav-item" data-section="investments">
+          <span class="nav-icon">📊</span>
+          <span>Investments</span>
+        </a>
+        <a href="#" class="nav-item" data-section="reports">
+          <span class="nav-icon">📑</span>
+          <span>Reports</span>
+        </a>
+        <a href="#" class="nav-item" data-section="settings">
+          <span class="nav-icon">⚙️</span>
+          <span>Settings</span>
+        </a>
+      </div>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="user-info">
+          <div class="user-name">Jay Takalgavankar</div>
+          <div class="user-role" id="userRole">Administrator</div>
+        </div>
+        <button class="user-menu-btn" id="userMenuBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="theme-controls">
+        <button class="theme-btn active" id="themeDark" title="Dark Theme">
+          <span>🌙</span>
+        </button>
+        <button class="theme-btn" id="themeLight" title="Light Theme">
+          <span>☀️</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Menu Overlay -->
+  <button class="mobile-menu-toggle" id="mobileMenuToggle">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Enhanced Header -->
+    <header class="header">
+      <div class="header-left">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <h1 class="page-title" id="pageTitle">Financial Overview</h1>
+      </div>
+      
+      <div class="header-stats">
+        <div class="stat-item">
+          <div class="stat-label">Total Balance</div>
+          <div class="stat-value" id="headerBalance">₹0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Growth</div>
+          <div class="stat-value positive" id="headerGrowth">+0%</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="headerTransactions">0</div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button class="action-btn" id="exportBtn" title="Export Data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Export
+        </button>
+        <button class="action-btn" id="refreshBtn" title="Refresh Data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+        </button>
+        <button class="action-btn" id="notificationBtn" title="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="notification-badge">3</span>
+        </button>
+        <button class="btn btn-primary" id="addTransactionBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add Transaction
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <!-- Overview Section -->
+      <section class="page-section active" id="section-overview">
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card animate-in">
+            <div class="metric-header">
+              <div class="metric-icon income">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+              </div>
+              <div class="metric-trend positive">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                </svg>
+                +12.5%
+              </div>
+            </div>
+            <div class="metric-value" id="totalBalance">₹0</div>
+            <div class="metric-label">Total Balance</div>
+          </div>
+          
+          <div class="metric-card animate-in" style="animation-delay: 0.1s">
+            <div class="metric-header">
+              <div class="metric-icon expense">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3h18v18H3zM12 8v8m-4-4h8"/>
+                </svg>
+              </div>
+              <div class="metric-trend negative">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 7l10 10M7 17L17 7"/>
+                </svg>
+                -8.2%
+              </div>
+            </div>
+            <div class="metric-value" id="totalIncome">₹0</div>
+            <div class="metric-label">Monthly Income</div>
+          </div>
+          
+          <div class="metric-card animate-in" style="animation-delay: 0.2s">
+            <div class="metric-header">
+              <div class="metric-icon savings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5Z"/>
+                </svg>
+              </div>
+              <div class="metric-trend positive">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                </svg>
+                +5.8%
+              </div>
+            </div>
+            <div class="metric-value" id="totalExpense">₹0</div>
+            <div class="metric-label">Monthly Expenses</div>
+          </div>
+          
+          <div class="metric-card animate-in" style="animation-delay: 0.3s">
+            <div class="metric-header">
+              <div class="metric-icon investment">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                </svg>
+              </div>
+              <div class="metric-trend positive">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                </svg>
+                +18.3%
+              </div>
+            </div>
+            <div class="metric-value" id="netSavings">₹0</div>
+            <div class="metric-label">Net Savings</div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <!-- Balance Trend Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Balance Trend</h3>
+              <div class="chart-controls">
+                <button class="chart-control active">6M</button>
+                <button class="chart-control">1Y</button>
+                <button class="chart-control">All</button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="balanceTrendChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Category Distribution -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Spending by Category</h3>
+              <button class="chart-control">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            </div>
+            <div class="chart-container">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions Table -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Recent Transactions</h3>
+            <button class="btn btn-secondary" id="viewAllTxBtn">
+              View All
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="recentTxTableBody">
+                <!-- Transactions will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Transactions Section -->
+      <section class="page-section" id="section-transactions">
+        <div class="section-header">
+          <h2>Transaction Management</h2>
+          <button class="btn btn-primary" id="addTxBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add Transaction
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-card">
+          <div class="filter-group">
+            <input type="text" class="filter-input" id="searchInput" placeholder="Search transactions...">
+          </div>
+          <div class="filter-group">
+            <select class="filter-select" id="filterType">
+              <option value="">All Types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select class="filter-select" id="filterCategory">
+              <option value="">All Categories</option>
+              <option value="Salary">Salary</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Investment">Investment</option>
+              <option value="Rent & Housing">Rent & Housing</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select class="filter-select" id="sortSelect">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="amount-desc">Highest Amount</option>
+              <option value="amount-asc">Lowest Amount</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="table-card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th class="text-right">Amount</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody">
+                <!-- Transactions will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reports Section -->
+      <section class="page-section" id="section-reports">
+        <div class="section-header">
+          <h2>Financial Reports</h2>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="generateReportBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+              </svg>
+              Generate Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Report Type Selection -->
+        <div class="report-types-grid">
+          <div class="report-type-card" data-report="monthly">
+            <div class="report-icon">📅</div>
+            <h3>Monthly Report</h3>
+            <p>Complete monthly financial summary with all transactions and insights</p>
+            <button class="btn btn-secondary generate-report" data-type="monthly">Generate</button>
+          </div>
+          
+          <div class="report-type-card" data-report="quarterly">
+            <div class="report-icon">📊</div>
+            <h3>Quarterly Report</h3>
+            <p>Comprehensive quarterly analysis with trends and projections</p>
+            <button class="btn btn-secondary generate-report" data-type="quarterly">Generate</button>
+          </div>
+          
+          <div class="report-type-card" data-report="annual">
+            <div class="report-icon">📈</div>
+            <h3>Annual Report</h3>
+            <p>Full year financial overview with tax implications and investment analysis</p>
+            <button class="btn btn-secondary generate-report" data-type="annual">Generate</button>
+          </div>
+          
+          <div class="report-type-card" data-report="custom">
+            <div class="report-icon">🎯</div>
+            <h3>Custom Report</h3>
+            <p>Tailored report with specific date ranges and categories</p>
+            <button class="btn btn-secondary generate-report" data-type="custom">Generate</button>
+          </div>
+        </div>
+
+        <!-- Generated Reports List -->
+        <div class="reports-list">
+          <h3>Recent Reports</h3>
+          <div class="reports-container" id="reportsContainer">
+            <!-- Reports will be populated here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section class="page-section" id="section-settings">
+        <div class="section-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="settings-grid">
+          <!-- Profile Settings -->
+          <div class="settings-card">
+            <div class="settings-header">
+              <h3>Profile Settings</h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+              </svg>
+            </div>
+            <div class="settings-content">
+              <div class="form-group">
+                <label>Administrator Name</label>
+                <input type="text" id="adminName" value="Jay Takalgavankar">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="adminEmail" value="jay@zorvynfinance.com">
+              </div>
+              <div class="form-group">
+                <label>Currency</label>
+                <select id="currencySelect">
+                  <option value="INR">Indian Rupee (₹)</option>
+                  <option value="USD">US Dollar ($)</option>
+                  <option value="EUR">Euro (€)</option>
+                  <option value="GBP">British Pound (£)</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="saveProfileBtn">Save Profile</button>
+            </div>
+          </div>
+
+          <!-- Notification Settings -->
+          <div class="settings-card">
+            <div class="settings-header">
+              <h3>Notifications</h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+              </svg>
+            </div>
+            <div class="settings-content">
+              <div class="setting-item">
+                <label class="setting-label">
+                  <input type="checkbox" id="emailNotifications" checked>
+                  <span>Email Notifications</span>
+                </label>
+                <p>Receive email updates about your financial activities</p>
+              </div>
+              <div class="setting-item">
+                <label class="setting-label">
+                  <input type="checkbox" id="budgetAlerts" checked>
+                  <span>Budget Alerts</span>
+                </label>
+                <p>Get notified when you approach budget limits</p>
+              </div>
+              <div class="setting-item">
+                <label class="setting-label">
+                  <input type="checkbox" id="monthlyReports" checked>
+                  <span>Monthly Reports</span>
+                </label>
+                <p>Automatic monthly financial reports</p>
+              </div>
+              <button class="btn btn-primary" id="saveNotificationsBtn">Save Preferences</button>
+            </div>
+          </div>
+
+          <!-- Data Management -->
+          <div class="settings-card">
+            <div class="settings-header">
+              <h3>Data Management</h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+              </svg>
+            </div>
+            <div class="settings-content">
+              <div class="setting-item">
+                <button class="btn btn-secondary" id="exportDataBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                  </svg>
+                  Export All Data
+                </button>
+                <p>Download all your financial data as CSV</p>
+              </div>
+              <div class="setting-item">
+                <button class="btn btn-secondary" id="importDataBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                  </svg>
+                  Import Data
+                </button>
+                <p>Import transactions from CSV file</p>
+              </div>
+              <div class="setting-item danger">
+                <button class="btn btn-danger" id="clearDataBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                  </svg>
+                  Clear All Data
+                </button>
+                <p>Permanently delete all transaction data</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Settings -->
+          <div class="settings-card">
+            <div class="settings-header">
+              <h3>System</h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <div class="settings-content">
+              <div class="setting-item">
+                <label class="setting-label">
+                  <input type="checkbox" id="autoSave" checked>
+                  <span>Auto-save</span>
+                </label>
+                <p>Automatically save changes to localStorage</p>
+              </div>
+              <div class="setting-item">
+                <label class="setting-label">
+                  <input type="checkbox" id="animations" checked>
+                  <span>Animations</span>
+                </label>
+                <p>Enable UI animations and transitions</p>
+              </div>
+              <div class="setting-item">
+                <label for="dateFormat">Date Format</label>
+                <select id="dateFormat">
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="saveSystemBtn">Save Settings</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Transaction Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Transaction</h3>
+        <button class="modal-close" id="modalClose">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="transactionForm">
+          <div class="form-group">
+            <label for="fDate">Date</label>
+            <input type="date" id="fDate" required>
+          </div>
+          <div class="form-group">
+            <label for="fDesc">Description</label>
+            <input type="text" id="fDesc" placeholder="Enter description" required>
+          </div>
+          <div class="form-group">
+            <label for="fAmount">Amount (₹)</label>
+            <input type="number" id="fAmount" placeholder="0.00" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="fType">Type</label>
+            <select id="fType" required>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fCategory">Category</label>
+            <select id="fCategory" required>
+              <option value="">Select category</option>
+              <option value="Salary">Salary</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Investment">Investment</option>
+              <option value="Rent & Housing">Rent & Housing</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="modalCancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="modalSave">Save Transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
